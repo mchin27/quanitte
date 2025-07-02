@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>iPhone Hardware Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 420px; margin: 30px auto; }
+    .btn { padding: 10px 18px; margin: 7px 0; font-size: 16px; border-radius: 7px; border: 1px solid #aaa; cursor: pointer; background: #f0f0f0; }
+    #canvas { border: 1px solid #aaa; margin: 8px 0; touch-action: none; }
+    #log { min-height: 40px; background: #f9f9f9; padding: 8px; margin-top: 12px; border-radius: 6px; border: 1px solid #eee; font-size: 15px;}
+    #preview-img { max-width: 100%; margin-top: 10px; border-radius: 7px; }
+    #audio-controls { margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h2>iPhone Hardware Test</h2>
+  <button class="btn" onclick="testSpeaker()">Test Loa</button>
+  <button class="btn" onclick="clearCanvas()">Test Cảm ứng màn hình (vẽ thử phía dưới)</button>
+  <canvas id="canvas" width="350" height="120"></canvas>
+  <button class="btn" onclick="startOrientation()">Test cảm biến xoay</button>
+  <button class="btn" onclick="startLightSensor()">Test cảm biến ánh sáng</button>
+  <button class="btn" onclick="testMicro()">Test Thu âm (Micro)</button>
+  <div id="audio-controls"></div>
+  <button class="btn" onclick="testCamera()">Test Camera</button>
+  <video id="video" autoplay playsinline style="width: 100%; display:none; border-radius:7px; margin-top:10px;"></video>
+  <button id="snapBtn" class="btn" style="display:none;" onclick="takePhoto()">Chụp ảnh</button>
+  <img id="preview-img" style="display:none;" />
+  <div id="log">Kết quả hiển thị ở đây...</div>
+
+<script>
+let ctx = canvas.getContext("2d");
+let drawing = false;
+
+// Test cảm ứng: vẽ trên canvas
+canvas.addEventListener("touchstart", e => {
+  drawing = true;
+  let t = e.touches[0];
+  drawDot(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top);
+}, false);
+
+canvas.addEventListener("touchmove", e => {
+  if (!drawing) return;
+  let t = e.touches[0];
+  drawDot(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top);
+}, false);
+
+canvas.addEventListener("touchend", () => { drawing = false; }, false);
+
+function drawDot(x, y) {
+  ctx.fillStyle = "#2196f3";
+  ctx.beginPath();
+  ctx.arc(x, y, 5, 0, 2 * Math.PI);
+  ctx.fill();
+}
+
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('log').textContent = "Vẽ thử trên vùng này để test cảm ứng!";
+}
+
+// Test loa: phát 1 tiếng beep
+function testSpeaker() {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(880, ctx.currentTime);
+  osc.connect(ctx.destination);
+  osc.start();
+  setTimeout(() => { osc.stop(); ctx.close(); }, 700);
+  document.getElementById('log').textContent = "Âm thanh test loa đã phát. Nếu bạn nghe được tiếng beep, loa hoạt động tốt.";
+}
+
+// Test cảm biến xoay
+let orientationStarted = false;
+function startOrientation() {
+  if (orientationStarted) return;
+  orientationStarted = true;
+  window.addEventListener("deviceorientation", handleOrientation);
+  document.getElementById('log').textContent = "Xoay iPhone thử! Thông số góc sẽ hiện bên dưới.";
+}
+
+function handleOrientation(event) {
+  let msg = `Góc alpha (xoay): ${event.alpha?.toFixed(2)}°\n`;
+  msg += `beta (nghiêng trước/sau): ${event.beta?.toFixed(2)}°\n`;
+  msg += `gamma (nghiêng trái/phải): ${event.gamma?.toFixed(2)}°`;
+  document.getElementById('log').textContent = msg;
+}
+
+// Test cảm biến ánh sáng (chỉ hỗ trợ Android/Chrome)
+let lightStarted = false;
+function startLightSensor() {
+  if (lightStarted) return;
+  lightStarted = true;
+  if ('AmbientLightSensor' in window) {
+    try {
+      let sensor = new AmbientLightSensor();
+      sensor.addEventListener('reading', () => {
+        document.getElementById('log').textContent = `Độ sáng môi trường: ${sensor.illuminance} lux`;
+      });
+      sensor.addEventListener('error', e => {
+        document.getElementById('log').textContent = `Không thể truy cập cảm biến ánh sáng: ${e.error.name}`;
+      });
+      sensor.start();
+    } catch (err) {
+      document.getElementById('log').textContent = "Trình duyệt không hỗ trợ AmbientLightSensor!";
+    }
+  } else if ('ondevicelight' in window) {
+    window.addEventListener('devicelight', function(e) {
+      document.getElementById('log').textContent = `Độ sáng môi trường: ${e.value} lux`;
+    });
+  } else {
+    document.getElementById('log').textContent = "iOS/Safari không hỗ trợ cảm biến ánh sáng qua trình duyệt.";
+  }
+}
+
+// Test Thu âm (Microphone)
+let mediaRecorder;
+let recordedChunks = [];
+function testMicro() {
+  const log = document.getElementById('log');
+  const audioControls = document.getElementById('audio-controls');
+  audioControls.innerHTML = '';
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    log.textContent = "Trình duyệt không hỗ trợ ghi âm micro!";
+    return;
+  }
+  log.textContent = "Nhấn 'Bắt đầu ghi' và nói thử vào micro!";
+  let startBtn = document.createElement('button');
+  startBtn.textContent = "Bắt đầu ghi";
+  startBtn.className = "btn";
+  let stopBtn = document.createElement('button');
+  stopBtn.textContent = "Dừng ghi";
+  stopBtn.className = "btn";
+  stopBtn.disabled = true;
+  audioControls.appendChild(startBtn);
+  audioControls.appendChild(stopBtn);
+
+  startBtn.onclick = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      recordedChunks = [];
+      mediaRecorder.ondataavailable = function(e) {
+        if (e.data.size > 0) recordedChunks.push(e.data);
+      };
+      mediaRecorder.onstop = function() {
+        const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+        const url = URL.createObjectURL(blob);
+        let audio = document.createElement('audio');
+        audio.controls = true;
+        audio.src = url;
+        audioControls.appendChild(document.createElement('br'));
+        audioControls.appendChild(audio);
+        log.textContent = "Bấm play để nghe lại đoạn ghi âm vừa thu!";
+      };
+      mediaRecorder.start();
+      log.textContent = "Đang ghi âm... Nói thử vào micro rồi nhấn 'Dừng ghi'!";
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+    } catch (err) {
+      log.textContent = "Không truy cập được micro: " + err.message;
+    }
+  };
+  stopBtn.onclick = () => {
+    if (mediaRecorder && mediaRecorder.state === "recording") {
+      mediaRecorder.stop();
+      stopBtn.disabled = true;
+      startBtn.disabled = false;
+    }
+  };
+}
+
+// Test Camera (mở camera và chụp ảnh)
+let cameraStream = null;
+function testCamera() {
+  const video = document.getElementById('video');
+  const snapBtn = document.getElementById('snapBtn');
+  const img = document.getElementById('preview-img');
+  const log = document.getElementById('log');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    log.textContent = "Trình duyệt không hỗ trợ truy cập camera!";
+    return;
+  }
+  video.style.display = "block";
+  snapBtn.style.display = "inline-block";
+  img.style.display = "none";
+  log.textContent = "Camera đang mở. Nhấn 'Chụp ảnh' để test camera.";
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      cameraStream = stream;
+      video.srcObject = stream;
+    })
+    .catch(err => {
+      log.textContent = "Không truy cập được camera: " + err.message;
+      video.style.display = "none";
+      snapBtn.style.display = "none";
+    });
+}
+function takePhoto() {
+  const video = document.getElementById('video');
+  const img = document.getElementById('preview-img');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  let ctx2 = canvas.getContext('2d');
+  ctx2.drawImage(video, 0, 0, canvas.width, canvas.height);
+  img.src = canvas.toDataURL('image/png');
+  img.style.display = "block";
+  document.getElementById('log').textContent = "Ảnh đã chụp từ camera.";
+  // Dừng camera sau khi chụp
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    document.getElementById('video').style.display = "none";
+    document.getElementById('snapBtn').style.display = "none";
+  }
+}
+</script>
+</body>
+</html>
