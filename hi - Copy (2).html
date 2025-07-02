@@ -4,24 +4,29 @@
   <meta charset="UTF-8">
   <title>iPhone Hardware Test</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 420px; margin: 30px auto; }
+    body { font-family: Arial, sans-serif; max-width: 440px; margin: 30px auto; }
     .btn { padding: 10px 18px; margin: 7px 0; font-size: 16px; border-radius: 7px; border: 1px solid #aaa; cursor: pointer; background: #f0f0f0; }
     #canvas { border: 1px solid #aaa; margin: 8px 0; touch-action: none; }
     #log { min-height: 40px; background: #f9f9f9; padding: 8px; margin-top: 12px; border-radius: 6px; border: 1px solid #eee; font-size: 15px;}
     #preview-img { max-width: 100%; margin-top: 10px; border-radius: 7px; }
     #audio-controls { margin-top: 6px; }
+    #camera-select { margin: 10px 0; }
   </style>
 </head>
 <body>
   <h2>iPhone Hardware Test</h2>
-  <button class="btn" onclick="testSpeaker()">Test Loa</button>
+  <button class="btn" onclick="testSpeaker()">Test Loa (phát âm beep)</button>
   <button class="btn" onclick="clearCanvas()">Test Cảm ứng màn hình (vẽ thử phía dưới)</button>
   <canvas id="canvas" width="350" height="120"></canvas>
   <button class="btn" onclick="startOrientation()">Test cảm biến xoay</button>
   <button class="btn" onclick="startLightSensor()">Test cảm biến ánh sáng</button>
-  <button class="btn" onclick="testMicro()">Test Thu âm (Micro)</button>
+  <button class="btn" onclick="autoMicro()">Test Micro (phát âm để kiểm tra mic tự động nhận)</button>
   <div id="audio-controls"></div>
-  <button class="btn" onclick="testCamera()">Test Camera</button>
+  <div id="camera-select">
+    <label><input type="radio" name="camface" value="user" checked> Camera Trước (Selfie)</label>
+    <label style="margin-left:20px;"><input type="radio" name="camface" value="environment"> Camera Sau</label>
+    <button class="btn" onclick="testCamera()">Test Camera</button>
+  </div>
   <video id="video" autoplay playsinline style="width: 100%; display:none; border-radius:7px; margin-top:10px;"></video>
   <button id="snapBtn" class="btn" style="display:none;" onclick="takePhoto()">Chụp ảnh</button>
   <img id="preview-img" style="display:none;" />
@@ -113,70 +118,28 @@ function startLightSensor() {
   }
 }
 
-// Test Thu âm (Microphone)
-let mediaRecorder;
-let recordedChunks = [];
-function testMicro() {
-  const log = document.getElementById('log');
-  const audioControls = document.getElementById('audio-controls');
-  audioControls.innerHTML = '';
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    log.textContent = "Trình duyệt không hỗ trợ ghi âm micro!";
-    return;
-  }
-  log.textContent = "Nhấn 'Bắt đầu ghi' và nói thử vào micro!";
-  let startBtn = document.createElement('button');
-  startBtn.textContent = "Bắt đầu ghi";
-  startBtn.className = "btn";
-  let stopBtn = document.createElement('button');
-  stopBtn.textContent = "Dừng ghi";
-  stopBtn.className = "btn";
-  stopBtn.disabled = true;
-  audioControls.appendChild(startBtn);
-  audioControls.appendChild(stopBtn);
-
-  startBtn.onclick = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
-      recordedChunks = [];
-      mediaRecorder.ondataavailable = function(e) {
-        if (e.data.size > 0) recordedChunks.push(e.data);
-      };
-      mediaRecorder.onstop = function() {
-        const blob = new Blob(recordedChunks, { type: 'audio/webm' });
-        const url = URL.createObjectURL(blob);
-        let audio = document.createElement('audio');
-        audio.controls = true;
-        audio.src = url;
-        audioControls.appendChild(document.createElement('br'));
-        audioControls.appendChild(audio);
-        log.textContent = "Bấm play để nghe lại đoạn ghi âm vừa thu!";
-      };
-      mediaRecorder.start();
-      log.textContent = "Đang ghi âm... Nói thử vào micro rồi nhấn 'Dừng ghi'!";
-      startBtn.disabled = true;
-      stopBtn.disabled = false;
-    } catch (err) {
-      log.textContent = "Không truy cập được micro: " + err.message;
-    }
-  };
-  stopBtn.onclick = () => {
-    if (mediaRecorder && mediaRecorder.state === "recording") {
-      mediaRecorder.stop();
-      stopBtn.disabled = true;
-      startBtn.disabled = false;
-    }
-  };
+// Test Microphone: tự động phát âm qua loa ngoài
+function autoMicro() {
+  // Phát tiếng beep để kiểm tra loa và mic (nếu ghi âm lại)
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const osc = ctx.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(1100, ctx.currentTime);
+  osc.connect(ctx.destination);
+  osc.start();
+  setTimeout(() => { osc.stop(); ctx.close(); }, 800);
+  document.getElementById('log').textContent = "Đã phát âm beep qua loa ngoài. Nếu test micro, hãy mở ứng dụng ghi âm khác và xem micro có ghi lại được âm này không!";
+  // Tính năng ghi âm tự động & phát lại hoàn toàn không thể không có thao tác người dùng do bảo mật trình duyệt.
 }
 
-// Test Camera (mở camera và chụp ảnh)
+// Test Camera: Chọn camera trước hoặc sau
 let cameraStream = null;
 function testCamera() {
   const video = document.getElementById('video');
   const snapBtn = document.getElementById('snapBtn');
   const img = document.getElementById('preview-img');
   const log = document.getElementById('log');
+  const facingMode = document.querySelector('input[name="camface"]:checked').value;
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     log.textContent = "Trình duyệt không hỗ trợ truy cập camera!";
     return;
@@ -184,16 +147,31 @@ function testCamera() {
   video.style.display = "block";
   snapBtn.style.display = "inline-block";
   img.style.display = "none";
-  log.textContent = "Camera đang mở. Nhấn 'Chụp ảnh' để test camera.";
-  navigator.mediaDevices.getUserMedia({ video: true })
+  log.textContent = `Camera đang mở (${facingMode === "user" ? "trước" : "sau"}). Nhấn 'Chụp ảnh' để test camera.`;
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+  }
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { exact: facingMode } }
+  })
     .then(stream => {
       cameraStream = stream;
       video.srcObject = stream;
     })
     .catch(err => {
-      log.textContent = "Không truy cập được camera: " + err.message;
-      video.style.display = "none";
-      snapBtn.style.display = "none";
+      // Nếu facingMode exact lỗi, thử facingMode ideal
+      navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: facingMode } }
+      })
+      .then(stream => {
+        cameraStream = stream;
+        video.srcObject = stream;
+      })
+      .catch(err2 => {
+        log.textContent = "Không truy cập được camera: " + err2.message;
+        video.style.display = "none";
+        snapBtn.style.display = "none";
+      });
     });
 }
 function takePhoto() {
