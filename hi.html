@@ -1,109 +1,538 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>iPhone Hardware Test</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 400px; margin: 30px auto; }
-    .btn { padding: 10px 18px; margin: 7px 0; font-size: 16px; border-radius: 7px; border: 1px solid #aaa; cursor: pointer; background: #f0f0f0; }
-    #canvas { border: 1px solid #aaa; margin: 8px 0; touch-action: none; }
-    #log { min-height: 40px; background: #f9f9f9; padding: 8px; margin-top: 12px; border-radius: 6px; border: 1px solid #eee; font-size: 15px;}
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>iPhone Test App</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TestApp">
+    <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 24px;
+            font-weight: 300;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .feature-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .feature-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+        
+        .feature-btn:active {
+            transform: translateY(0);
+        }
+        
+        .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        
+        .status-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 150px;
+        }
+        
+        .status-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #FFD700;
+        }
+        
+        .status-content {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #E0E0E0;
+        }
+        
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            height: 8px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, #00D4FF, #5B73FF);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        
+        .device-info {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 12px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+        }
+        
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            margin: 50px auto;
+            max-width: 350px;
+            color: white;
+        }
+        
+        .close-btn {
+            background: #FF4757;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            float: right;
+            font-size: 14px;
+        }
+        
+        .test-result {
+            background: rgba(0, 255, 0, 0.2);
+            border-left: 4px solid #00FF00;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        
+        .test-error {
+            background: rgba(255, 0, 0, 0.2);
+            border-left: 4px solid #FF0000;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h2>iPhone Hardware Test</h2>
-  <button class="btn" onclick="testSpeaker()">Test Loa</button>
-  <button class="btn" onclick="clearCanvas()">Test Cảm ứng màn hình (vẽ thử phía dưới)</button>
-  <canvas id="canvas" width="350" height="150"></canvas>
-  <button class="btn" onclick="startOrientation()">Test cảm biến xoay</button>
-  <button class="btn" onclick="startLightSensor()">Test cảm biến ánh sáng</button>
-  <div id="log">Kết quả hiển thị ở đây...</div>
+    <div class="container">
+        <h1>📱 iPhone Test Suite</h1>
+        
+        <div class="status-panel">
+            <div class="status-title">🔍 System Status</div>
+            <div class="status-content" id="statusContent">
+                Initializing test environment...
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+            </div>
+        </div>
+        
+        <div class="feature-grid">
+            <button class="feature-btn" onclick="testCamera()">
+                <div class="icon">📷</div>
+                <div>Camera Test</div>
+            </button>
+            
+            <button class="feature-btn" onclick="testLocation()">
+                <div class="icon">📍</div>
+                <div>GPS Test</div>
+            </button>
+            
+            <button class="feature-btn" onclick="testMotion()">
+                <div class="icon">🎯</div>
+                <div>Motion Test</div>
+            </button>
+            
+            <button class="feature-btn" onclick="testAudio()">
+                <div class="icon">🎵</div>
+                <div>Audio Test</div>
+            </button>
+            
+            <button class="feature-btn" onclick="testNetwork()">
+                <div class="icon">🌐</div>
+                <div>Network Test</div>
+            </button>
+            
+            <button class="feature-btn" onclick="testStorage()">
+                <div class="icon">💾</div>
+                <div>Storage Test</div>
+            </button>
+            
+            <button class="feature-btn" onclick="testNotification()">
+                <div class="icon">🔔</div>
+                <div>Notification</div>
+            </button>
+            
+            <button class="feature-btn" onclick="testBattery()">
+                <div class="icon">🔋</div>
+                <div>Battery Info</div>
+            </button>
+        </div>
+        
+        <div class="device-info">
+            <div class="info-row">
+                <span>User Agent:</span>
+                <span id="userAgent"></span>
+            </div>
+            <div class="info-row">
+                <span>Screen:</span>
+                <span id="screenInfo"></span>
+            </div>
+            <div class="info-row">
+                <span>Platform:</span>
+                <span id="platformInfo"></span>
+            </div>
+            <div class="info-row">
+                <span>Language:</span>
+                <span id="languageInfo"></span>
+            </div>
+            <div class="info-row">
+                <span>Timezone:</span>
+                <span id="timezoneInfo"></span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal for test results -->
+    <div id="testModal" class="modal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeModal()">✖</button>
+            <h3 id="modalTitle">Test Results</h3>
+            <div id="modalContent"></div>
+        </div>
+    </div>
 
-<script>
-let ctx = canvas.getContext("2d");
-let drawing = false;
-
-// Test cảm ứng: vẽ trên canvas
-canvas.addEventListener("touchstart", e => {
-  drawing = true;
-  let t = e.touches[0];
-  drawDot(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top);
-}, false);
-
-canvas.addEventListener("touchmove", e => {
-  if (!drawing) return;
-  let t = e.touches[0];
-  drawDot(t.clientX - canvas.getBoundingClientRect().left, t.clientY - canvas.getBoundingClientRect().top);
-}, false);
-
-canvas.addEventListener("touchend", () => { drawing = false; }, false);
-
-function drawDot(x, y) {
-  ctx.fillStyle = "#2196f3";
-  ctx.beginPath();
-  ctx.arc(x, y, 5, 0, 2 * Math.PI);
-  ctx.fill();
-}
-
-function clearCanvas() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  document.getElementById('log').textContent = "Vẽ thử trên vùng này để test cảm ứng!";
-}
-
-// Test loa: phát 1 tiếng beep
-function testSpeaker() {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const osc = ctx.createOscillator();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(880, ctx.currentTime);
-  osc.connect(ctx.destination);
-  osc.start();
-  setTimeout(() => { osc.stop(); ctx.close(); }, 700);
-  document.getElementById('log').textContent = "Âm thanh test loa đã phát. Nếu bạn nghe được tiếng beep, loa hoạt động tốt.";
-}
-
-// Test cảm biến xoay
-let orientationStarted = false;
-function startOrientation() {
-  if (orientationStarted) return;
-  orientationStarted = true;
-  window.addEventListener("deviceorientation", handleOrientation);
-  document.getElementById('log').textContent = "Xoay iPhone thử! Thông số góc sẽ hiện bên dưới.";
-}
-
-function handleOrientation(event) {
-  let msg = `Góc alpha (xoay): ${event.alpha?.toFixed(2)}°\n`;
-  msg += `beta (nghiêng trước/sau): ${event.beta?.toFixed(2)}°\n`;
-  msg += `gamma (nghiêng trái/phải): ${event.gamma?.toFixed(2)}°`;
-  document.getElementById('log').textContent = msg;
-}
-
-// Test cảm biến ánh sáng (chỉ hỗ trợ Android/Chrome)
-let lightStarted = false;
-function startLightSensor() {
-  if (lightStarted) return;
-  lightStarted = true;
-  if ('AmbientLightSensor' in window) {
-    try {
-      let sensor = new AmbientLightSensor();
-      sensor.addEventListener('reading', () => {
-        document.getElementById('log').textContent = `Độ sáng môi trường: ${sensor.illuminance} lux`;
-      });
-      sensor.addEventListener('error', e => {
-        document.getElementById('log').textContent = `Không thể truy cập cảm biến ánh sáng: ${e.error.name}`;
-      });
-      sensor.start();
-    } catch (err) {
-      document.getElementById('log').textContent = "Trình duyệt không hỗ trợ AmbientLightSensor!";
-    }
-  } else if ('ondevicelight' in window) {
-    window.addEventListener('devicelight', function(e) {
-      document.getElementById('log').textContent = `Độ sáng môi trường: ${e.value} lux`;
-    });
-  } else {
-    document.getElementById('log').textContent = "iOS/Safari không hỗ trợ cảm biến ánh sáng qua trình duyệt.";
-  }
-}
-</script>
+    <script>
+        // Initialize app
+        let testProgress = 0;
+        let isTestRunning = false;
+        
+        // Device info
+        document.getElementById('userAgent').textContent = navigator.userAgent.includes('iPhone') ? 'iPhone' : 'Other';
+        document.getElementById('screenInfo').textContent = `${screen.width}x${screen.height}`;
+        document.getElementById('platformInfo').textContent = navigator.platform;
+        document.getElementById('languageInfo').textContent = navigator.language;
+        document.getElementById('timezoneInfo').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        
+        // Update status
+        function updateStatus(message, progress = null) {
+            document.getElementById('statusContent').textContent = message;
+            if (progress !== null) {
+                document.getElementById('progressFill').style.width = progress + '%';
+            }
+        }
+        
+        // Show modal
+        function showModal(title, content) {
+            document.getElementById('modalTitle').textContent = title;
+            document.getElementById('modalContent').innerHTML = content;
+            document.getElementById('testModal').style.display = 'block';
+        }
+        
+        // Close modal
+        function closeModal() {
+            document.getElementById('testModal').style.display = 'none';
+        }
+        
+        // Test functions
+        async function testCamera() {
+            updateStatus('Testing camera access...', 20);
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                stream.getTracks().forEach(track => track.stop());
+                showModal('📷 Camera Test', '<div class="test-result">✅ Camera access granted successfully!</div>');
+                updateStatus('Camera test completed', 100);
+            } catch (error) {
+                showModal('📷 Camera Test', '<div class="test-error">❌ Camera access denied or not available</div>');
+                updateStatus('Camera test failed', 0);
+            }
+        }
+        
+        async function testLocation() {
+            updateStatus('Testing GPS location...', 30);
+            if (!navigator.geolocation) {
+                showModal('📍 GPS Test', '<div class="test-error">❌ Geolocation not supported</div>');
+                return;
+            }
+            
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude.toFixed(6);
+                    const lon = position.coords.longitude.toFixed(6);
+                    const accuracy = position.coords.accuracy;
+                    showModal('📍 GPS Test', `
+                        <div class="test-result">
+                            ✅ Location obtained successfully!<br>
+                            Latitude: ${lat}<br>
+                            Longitude: ${lon}<br>
+                            Accuracy: ${accuracy}m
+                        </div>
+                    `);
+                    updateStatus('GPS test completed', 100);
+                },
+                (error) => {
+                    showModal('📍 GPS Test', '<div class="test-error">❌ Location access denied or unavailable</div>');
+                    updateStatus('GPS test failed', 0);
+                }
+            );
+        }
+        
+        async function testMotion() {
+            updateStatus('Testing motion sensors...', 40);
+            
+            if (!DeviceOrientationEvent && !DeviceMotionEvent) {
+                showModal('🎯 Motion Test', '<div class="test-error">❌ Motion sensors not supported</div>');
+                return;
+            }
+            
+            let motionData = '';
+            
+            const handleOrientation = (event) => {
+                motionData = `
+                    <div class="test-result">
+                        ✅ Motion sensors active!<br>
+                        Alpha: ${event.alpha ? event.alpha.toFixed(2) : 'N/A'}°<br>
+                        Beta: ${event.beta ? event.beta.toFixed(2) : 'N/A'}°<br>
+                        Gamma: ${event.gamma ? event.gamma.toFixed(2) : 'N/A'}°
+                    </div>
+                `;
+                showModal('🎯 Motion Test', motionData);
+                window.removeEventListener('deviceorientation', handleOrientation);
+                updateStatus('Motion test completed', 100);
+            };
+            
+            window.addEventListener('deviceorientation', handleOrientation);
+            
+            // Fallback after 3 seconds
+            setTimeout(() => {
+                if (!motionData) {
+                    showModal('🎯 Motion Test', '<div class="test-error">❌ Motion sensors not available or permission denied</div>');
+                    updateStatus('Motion test failed', 0);
+                }
+            }, 3000);
+        }
+        
+        async function testAudio() {
+            updateStatus('Testing audio capabilities...', 50);
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = 440;
+                gainNode.gain.value = 0.1;
+                
+                oscillator.start();
+                setTimeout(() => oscillator.stop(), 200);
+                
+                showModal('🎵 Audio Test', '<div class="test-result">✅ Audio system working! Played 440Hz tone</div>');
+                updateStatus('Audio test completed', 100);
+            } catch (error) {
+                showModal('🎵 Audio Test', '<div class="test-error">❌ Audio system not available</div>');
+                updateStatus('Audio test failed', 0);
+            }
+        }
+        
+        async function testNetwork() {
+            updateStatus('Testing network connectivity...', 60);
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            
+            let networkInfo = `
+                <div class="test-result">
+                    ✅ Network information:<br>
+                    Online: ${navigator.onLine ? 'Yes' : 'No'}<br>
+                    Connection Type: ${connection ? connection.effectiveType : 'Unknown'}<br>
+                    Downlink: ${connection ? connection.downlink + ' Mbps' : 'Unknown'}
+                </div>
+            `;
+            
+            showModal('🌐 Network Test', networkInfo);
+            updateStatus('Network test completed', 100);
+        }
+        
+        async function testStorage() {
+            updateStatus('Testing storage capabilities...', 70);
+            
+            try {
+                // Test localStorage
+                const testKey = 'testApp_' + Date.now();
+                const testValue = 'Hello iPhone Test!';
+                localStorage.setItem(testKey, testValue);
+                const retrieved = localStorage.getItem(testKey);
+                localStorage.removeItem(testKey);
+                
+                // Get storage estimate
+                let storageInfo = '';
+                if (navigator.storage && navigator.storage.estimate) {
+                    const estimate = await navigator.storage.estimate();
+                    const usedMB = (estimate.usage / 1024 / 1024).toFixed(2);
+                    const quotaMB = (estimate.quota / 1024 / 1024).toFixed(2);
+                    storageInfo = `<br>Used: ${usedMB} MB<br>Quota: ${quotaMB} MB`;
+                }
+                
+                showModal('💾 Storage Test', `
+                    <div class="test-result">
+                        ✅ Storage working!<br>
+                        LocalStorage: ${retrieved === testValue ? 'OK' : 'Failed'}
+                        ${storageInfo}
+                    </div>
+                `);
+                updateStatus('Storage test completed', 100);
+            } catch (error) {
+                showModal('💾 Storage Test', '<div class="test-error">❌ Storage not available</div>');
+                updateStatus('Storage test failed', 0);
+            }
+        }
+        
+        async function testNotification() {
+            updateStatus('Testing notification system...', 80);
+            
+            if (!('Notification' in window)) {
+                showModal('🔔 Notification Test', '<div class="test-error">❌ Notifications not supported</div>');
+                return;
+            }
+            
+            const permission = await Notification.requestPermission();
+            
+            if (permission === 'granted') {
+                new Notification('iPhone Test App', {
+                    body: 'Notification system working!',
+                    icon: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
+                });
+                showModal('🔔 Notification Test', '<div class="test-result">✅ Notification sent successfully!</div>');
+                updateStatus('Notification test completed', 100);
+            } else {
+                showModal('🔔 Notification Test', '<div class="test-error">❌ Notification permission denied</div>');
+                updateStatus('Notification test failed', 0);
+            }
+        }
+        
+        async function testBattery() {
+            updateStatus('Testing battery information...', 90);
+            
+            if ('getBattery' in navigator) {
+                try {
+                    const battery = await navigator.getBattery();
+                    const level = (battery.level * 100).toFixed(0);
+                    const charging = battery.charging ? 'Yes' : 'No';
+                    const chargingTime = battery.chargingTime === Infinity ? 'N/A' : Math.round(battery.chargingTime / 60) + ' mins';
+                    
+                    showModal('🔋 Battery Test', `
+                        <div class="test-result">
+                            ✅ Battery information:<br>
+                            Level: ${level}%<br>
+                            Charging: ${charging}<br>
+                            Charging Time: ${chargingTime}
+                        </div>
+                    `);
+                    updateStatus('Battery test completed', 100);
+                } catch (error) {
+                    showModal('🔋 Battery Test', '<div class="test-error">❌ Battery API not available</div>');
+                    updateStatus('Battery test failed', 0);
+                }
+            } else {
+                showModal('🔋 Battery Test', '<div class="test-error">❌ Battery API not supported</div>');
+                updateStatus('Battery test failed', 0);
+            }
+        }
+        
+        // Initialize status
+        setTimeout(() => {
+            updateStatus('Ready for testing! Tap any feature to test.', 0);
+        }, 1000);
+        
+        // Add touch feedback
+        document.addEventListener('touchstart', function() {}, {passive: true});
+        
+        // Prevent zoom
+        document.addEventListener('gesturestart', function (e) {
+            e.preventDefault();
+        });
+        
+        // Auto-hide address bar on iOS
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                window.scrollTo(0, 1);
+            }, 100);
+        });
+    </script>
 </body>
 </html>
